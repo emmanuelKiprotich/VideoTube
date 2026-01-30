@@ -1,3 +1,31 @@
+// --- Supabase Configuration ---
+const SUPABASE_URL = 'https://ddsyyrqctkehzujntqxv.supabase.co'; // Replace with your Supabase URL
+const SUPABASE_KEY = 'YeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRkc3l5cnFjdGtlaHp1am50cXh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk4MDI4OTUsImV4cCI6MjA4NTM3ODg5NX0.SEjZGh4MqicoMX--Pbo0r9vgV0DbArNjXDgGHZrjHdoeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRkc3l5cnFjdGtlaHp1am50cXh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk4MDI4OTUsImV4cCI6MjA4NTM3ODg5NX0.SEjZGh4MqicoMX--Pbo0r9vgV0DbArNjXDgGHZrjHdo'; // Replace with your Supabase Anon Key
+let supabaseClient = null;
+
+// Helper to load and get Supabase client
+function getSupabase() {
+    return new Promise((resolve, reject) => {
+        if (supabaseClient) return resolve(supabaseClient);
+        
+        if (typeof supabase !== 'undefined') {
+            const { createClient } = supabase;
+            supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
+            return resolve(supabaseClient);
+        }
+
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+        script.onload = () => {
+            const { createClient } = supabase;
+            supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
+            resolve(supabaseClient);
+        };
+        script.onerror = reject;
+        document.head.appendChild(script);
+    });
+}
+
 document.getElementById('searchInput').addEventListener('keyup', function() {
     // 1. Get the text the user typed and convert to lowercase
     let filter = this.value.toLowerCase();
@@ -47,7 +75,7 @@ if (menuIcon && sidebar) {
 
 // --- Watch Later Functionality ---
 
-document.addEventListener('click', function(e) {
+document.addEventListener('click', async function(e) {
     // Check if a watch later button was clicked
     if (e.target.classList.contains('watch-later-btn')) {
         e.preventDefault(); // Prevent the parent <a> tag from navigating
@@ -63,7 +91,7 @@ document.addEventListener('click', function(e) {
             channel: card.querySelector('.text-info p').innerText
         };
 
-        addToWatchLater(videoData);
+        await addToWatchLater(videoData);
         alert(`'${videoData.title}' added to Watch Later!`);
     }
     
@@ -73,44 +101,83 @@ document.addEventListener('click', function(e) {
         e.stopPropagation();
         const card = e.target.closest('.video-card');
         const videoId = card.getAttribute('data-video-id');
-        removeFromWatchLater(videoId);
+        await removeFromWatchLater(videoId);
     }
 });
 
-function addToWatchLater(video) {
-    let watchLaterList = JSON.parse(localStorage.getItem('watchLater')) || [];
+async function addToWatchLater(video) {
+    const sb = await getSupabase();
+    const { data: { session } } = await sb.auth.getSession();
 
-    // Prevent adding duplicates
-    if (!watchLaterList.some(v => v.id === video.id)) {
-        watchLaterList.push(video);
-        localStorage.setItem('watchLater', JSON.stringify(watchLaterList));
+    if (session) {
+        // Save to Supabase DB
+        const { error } = await sb.from('watch_later').insert({
+            user_id: session.user.id,
+            video_data: video
+        });
+        if (error) console.error('Error adding to watch later:', error);
+    } else {
+        // Fallback to localStorage for guests
+        let watchLaterList = JSON.parse(localStorage.getItem('watchLater')) || [];
+        if (!watchLaterList.some(v => v.id === video.id)) {
+            watchLaterList.push(video);
+            localStorage.setItem('watchLater', JSON.stringify(watchLaterList));
+        }
     }
 }
 
-function removeFromWatchLater(id) {
-    let watchLaterList = JSON.parse(localStorage.getItem('watchLater')) || [];
-    watchLaterList = watchLaterList.filter(v => v.id !== id);
-    localStorage.setItem('watchLater', JSON.stringify(watchLaterList));
-    renderWatchLater(); // Re-render the list to show changes immediately
+async function removeFromWatchLater(id) {
+    const sb = await getSupabase();
+    const { data: { session } } = await sb.auth.getSession();
+
+    if (session) {
+        // Remove from Supabase DB using JSON containment to match the video ID
+        const { error } = await sb
+            .from('watch_later')
+            .delete()
+            .eq('user_id', session.user.id)
+            .contains('video_data', { id: id });
+
+        if (!error) renderWatchLater();
+    } else {
+        let watchLaterList = JSON.parse(localStorage.getItem('watchLater')) || [];
+        watchLaterList = watchLaterList.filter(v => v.id !== id);
+        localStorage.setItem('watchLater', JSON.stringify(watchLaterList));
+        renderWatchLater();
+    }
 }
 
-function renderWatchLater() {
+async function renderWatchLater() {
     const container = document.getElementById('watch-later-list');
     // Only run this function if we are on a page with the watch later container (library.html)
     if (!container) return;
 
-    const watchLaterList = JSON.parse(localStorage.getItem('watchLater')) || [];
+    const sb = await getSupabase();
+    const { data: { session } } = await sb.auth.getSession();
+    
+    let watchLaterList = [];
+
+    if (session) {
+        // Fetch from DB
+        const { data, error } = await sb.from('watch_later').select('video_data');
+        if (data) {
+            watchLaterList = data.map(row => row.video_data);
+        }
+    } else {
+        // Fetch from LocalStorage
+        watchLaterList = JSON.parse(localStorage.getItem('watchLater')) || [];
+    }
+
     const placeholder = document.getElementById('watch-later-placeholder');
 
     if (watchLaterList.length > 0) {
-        placeholder.style.display = 'none';
+        if (placeholder) placeholder.style.display = 'none';
         container.innerHTML = ''; // Clear the placeholder text
         watchLaterList.forEach(video => {
             const videoCardHTML = `
-                <a href="watch.html" style="text-decoration: none; color: inherit;">
+                <a href="watch.html?v=${video.id}" style="text-decoration: none; color: inherit;">
                     <div class="video-card" data-video-id="${video.id}">
                         <img src="${video.thumbnail}" class="thumbnail">
-                        <button class="remove-btn">REMOVE</button>
                         <div class="video-info">
                             <div class="text-info">
                                 <h3 class="video-title">${video.title}</h3>
@@ -124,8 +191,49 @@ function renderWatchLater() {
     }
 }
 
+// --- Video Grid Population ---
+async function fetchVideos() {
+    const sb = await getSupabase();
+    const { data, error } = await sb.from('videos').select('*');
+    if (error) {
+        console.error('Error fetching videos:', error);
+        return [];
+    }
+    return data;
+}
+
+function renderVideos(videos) {
+    const videoGrid = document.querySelector('.video-grid');
+    if (!videoGrid) return;
+
+    videoGrid.innerHTML = ''; // Clear existing videos
+    videos.forEach(video => {
+        const videoCard = `
+            <a href="watch.html?v=${video.id}" style="text-decoration: none; color: inherit;">
+                <div class="video-card" data-video-id="${video.id}">
+                    <img src="${video.thumbnail_url}" class="thumbnail">
+                    <button class="watch-later-btn">WATCH LATER</button>
+                    <div class="video-info">
+                        <div class="channel-pic" style="background-image: url('${video.channel_avatar_url}')"></div>
+                        <div class="text-info">
+                            <h3 class="video-title">${video.title}</h3>
+                            <p>${video.channel_name}</p>
+                            <p>${video.view_count} views • ${new Date(video.created_at).toLocaleDateString()}</p>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        `;
+        videoGrid.innerHTML += videoCard;
+    });
+}
+
 // Run the render function when the page has loaded
-document.addEventListener('DOMContentLoaded', renderWatchLater);
+document.addEventListener('DOMContentLoaded', async () => {
+    renderWatchLater();
+    const videos = await fetchVideos();
+    renderVideos(videos);
+});
 
 // --- Dark Mode Toggle ---
 const darkModeToggle = document.getElementById('darkModeToggle');
@@ -246,10 +354,17 @@ function simulateUpload() {
 }
 
 // --- Dynamic User Avatar Logic ---
-function loadUserAvatar() {
-    // Simulate a user avatar URL (check localStorage or use default)
-    const defaultAvatar = 'https://picsum.photos/seed/currentUser/200';
-    const userAvatarUrl = localStorage.getItem('userAvatar') || defaultAvatar;
+async function loadUserAvatar() {
+    const sb = await getSupabase();
+    const { data: { session } } = await sb.auth.getSession();
+
+    let userAvatarUrl = 'https://picsum.photos/seed/currentUser/200'; // Default
+
+    if (session?.user?.user_metadata?.avatar_url) {
+        userAvatarUrl = session.user.user_metadata.avatar_url;
+    } else if (localStorage.getItem('userAvatar')) {
+        userAvatarUrl = localStorage.getItem('userAvatar');
+    }
 
     // Selectors for all places the user avatar appears
     const avatarSelectors = [
@@ -273,9 +388,12 @@ function loadUserAvatar() {
 document.addEventListener('DOMContentLoaded', loadUserAvatar);
 
 // --- Authentication Logic ---
-function checkAuth() {
-    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+async function checkAuth() {
     const userIcons = document.querySelector('.user-icons');
+    
+    const sb = await getSupabase();
+    const { data: { session } } = await sb.auth.getSession();
+    const isLoggedIn = !!session;
     
     // Redirect protected pages if not logged in
     const path = window.location.pathname;
@@ -299,7 +417,7 @@ function checkAuth() {
         if (signInBtn) signInBtn.remove();
         
         // Setup Sign Out listener
-        setupSignOut();
+        setupSignOut(sb);
     } else {
         // Hide auth elements
         authElements.forEach(el => el.style.display = 'none');
@@ -320,13 +438,32 @@ function checkAuth() {
     }
 }
 
-function setupSignOut() {
+function updateUserProfileUI(user) {
+    // Update Profile Page Name
+    const profileName = document.querySelector('.profile-info h1');
+    const profileHandle = document.querySelector('.profile-info p');
+    
+    if (profileName && user.user_metadata?.full_name) {
+        profileName.innerText = user.user_metadata.full_name;
+    }
+    
+    if (profileHandle && user.email) {
+        const handle = '@' + user.email.split('@')[0];
+        // Preserve the "subscribers • videos" part if it exists
+        if (profileHandle.innerText.includes('•')) {
+            const stats = profileHandle.innerText.substring(profileHandle.innerText.indexOf('•'));
+            profileHandle.innerText = `${handle} ${stats}`;
+        }
+    }
+}
+
+function setupSignOut(sb) {
     const modalItems = document.querySelectorAll('.user-modal-item');
     modalItems.forEach(item => {
         if (item.innerText.includes('Sign out')) {
-            item.onclick = () => {
-                localStorage.setItem('isLoggedIn', 'false');
-                window.location.reload();
+            item.onclick = async () => {
+                await sb.auth.signOut();
+                window.location.href = 'index.html';
             };
         }
     });
@@ -335,40 +472,107 @@ function setupSignOut() {
 // Handle Login/Signup Forms
 const loginForm = document.getElementById('loginForm');
 if (loginForm) {
-    loginForm.addEventListener('submit', (e) => {
+    loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        localStorage.setItem('isLoggedIn', 'true');
-        localStorage.setItem('userAvatar', 'https://picsum.photos/seed/user/200'); // Set mock avatar
-        window.location.href = 'index.html';
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const btn = loginForm.querySelector('button');
+        const errorMsg = document.getElementById('auth-error');
+        
+        // UI Loading State
+        const originalText = btn.innerText;
+        btn.innerText = 'Signing in...';
+        btn.disabled = true;
+        if (errorMsg) errorMsg.style.display = 'none';
+        
+        const sb = await getSupabase();
+        const { data, error } = await sb.auth.signInWithPassword({ email, password });
+        
+        if (error) {
+            if (errorMsg) {
+                errorMsg.innerText = error.message;
+                errorMsg.style.display = 'block';
+            } else {
+                alert('Login failed: ' + error.message);
+            }
+            btn.innerText = originalText;
+            btn.disabled = false;
+        } else {
+            // Login successful, redirect to home
+            window.location.href = 'index.html';
+        }
     });
 }
 
 const signupForm = document.getElementById('signupForm');
 if (signupForm) {
-    signupForm.addEventListener('submit', (e) => {
+    signupForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        
+        const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
-        if (password.length < 8) {
-            alert("Password must be at least 8 characters long.");
-            return;
-        }
+        const name = document.getElementById('name').value;
+        const btn = signupForm.querySelector('button');
+        const errorMsg = document.getElementById('auth-error');
+        
+        // UI Loading State
+        const originalText = btn.innerText;
+        btn.innerText = 'Creating Account...';
+        btn.disabled = true;
+        if (errorMsg) errorMsg.style.display = 'none';
+        
+        const sb = await getSupabase();
+        const { data, error } = await sb.auth.signUp({
+            email: email,
+            password: password,
+            options: { data: { full_name: name } }
+        });
 
-        localStorage.setItem('isLoggedIn', 'true');
-        localStorage.setItem('userAvatar', 'https://picsum.photos/seed/user/200'); // Set mock avatar
-        window.location.href = 'index.html';
+        if (error) {
+            if (errorMsg) {
+                errorMsg.innerText = error.message;
+                errorMsg.style.display = 'block';
+            } else {
+                alert('Signup failed: ' + error.message);
+            }
+            btn.innerText = originalText;
+            btn.disabled = false;
+        } else {
+            // Check if session was created immediately (Auto Confirm enabled in Supabase)
+            if (data.session) {
+                window.location.href = 'index.html';
+            } else {
+                alert('Signup successful! Please check your email to confirm.');
+                window.location.href = 'login.html';
+            }
+        }
     });
 }
 
 // Handle Forgot Password Form
 const forgotPasswordForm = document.getElementById('forgotPasswordForm');
 if (forgotPasswordForm) {
-    forgotPasswordForm.addEventListener('submit', (e) => {
+    forgotPasswordForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = document.getElementById('recoveryEmail').value;
-        alert(`Password reset link sent to ${email}`);
-        window.location.href = 'login.html';
+        
+        const sb = await getSupabase();
+        const { error } = await sb.auth.resetPasswordForEmail(email, {
+            redirectTo: window.location.origin + '/reset_password.html',
+        });
+
+        if (error) {
+            alert('Error: ' + error.message);
+        } else {
+            alert(`Password reset link sent to ${email}`);
+            window.location.href = 'login.html';
+        }
     });
 }
 
-document.addEventListener('DOMContentLoaded', checkAuth);
+document.addEventListener('DOMContentLoaded', async () => {
+    await checkAuth();
+    // If on profile page and logged in, update UI
+    const sb = await getSupabase();
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) updateUserProfileUI(session.user);
+});
