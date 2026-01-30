@@ -244,3 +244,131 @@ function simulateUpload() {
         }
     }, 200);
 }
+
+// --- Dynamic User Avatar Logic ---
+function loadUserAvatar() {
+    // Simulate a user avatar URL (check localStorage or use default)
+    const defaultAvatar = 'https://picsum.photos/seed/currentUser/200';
+    const userAvatarUrl = localStorage.getItem('userAvatar') || defaultAvatar;
+
+    // Selectors for all places the user avatar appears
+    const avatarSelectors = [
+        '.profile-pic',                                      // Navbar
+        '.sidebar-watch a[href="profile.html"] .channel-pic', // Sidebar "Your Channel"
+        '.profile-avatar-large',                             // Profile Page Header
+        '.comment-input-block .user-avatar'                  // Watch Page Comment Input
+    ];
+
+    avatarSelectors.forEach(selector => {
+        const elements = document.querySelectorAll(selector);
+        elements.forEach(el => {
+            el.style.backgroundImage = `url('${userAvatarUrl}')`;
+            el.style.backgroundSize = 'cover';
+            el.style.backgroundPosition = 'center';
+            el.style.backgroundColor = 'transparent'; // Override default gray
+        });
+    });
+}
+
+document.addEventListener('DOMContentLoaded', loadUserAvatar);
+
+// --- Authentication Logic ---
+function checkAuth() {
+    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    const userIcons = document.querySelector('.user-icons');
+    
+    // Redirect protected pages if not logged in
+    const path = window.location.pathname;
+    const protectedPages = ['upload.html', 'profile.html', 'library.html', 'liked.html'];
+    // Simple check: if the current path contains a protected page name and user is not logged in
+    if (protectedPages.some(page => path.includes(page)) && !isLoggedIn) {
+        window.location.href = 'login.html';
+        return;
+    }
+
+    if (!userIcons) return;
+
+    // Elements that should only be visible when logged in
+    const authElements = userIcons.querySelectorAll('.notification-wrapper, .profile-pic, a[href="upload.html"]');
+    let signInBtn = userIcons.querySelector('.sign-in-btn');
+
+    if (isLoggedIn) {
+        // Show auth elements
+        authElements.forEach(el => el.style.display = ''); 
+        
+        if (signInBtn) signInBtn.remove();
+        
+        // Setup Sign Out listener
+        setupSignOut();
+    } else {
+        // Hide auth elements
+        authElements.forEach(el => el.style.display = 'none');
+        
+        // Add Sign In button if it doesn't exist
+        if (!signInBtn) {
+            signInBtn = document.createElement('a');
+            signInBtn.href = 'login.html';
+            signInBtn.className = 'sign-in-btn';
+            signInBtn.style.textDecoration = 'none';
+            signInBtn.innerHTML = `
+                <div style="display: flex; align-items: center; border: 1px solid #3ea6ff; color: #3ea6ff; padding: 5px 15px; border-radius: 18px; cursor: pointer; margin-left: 10px;">
+                    <span style="margin-right: 5px; font-size: 16px;">👤</span> Sign in
+                </div>
+            `;
+            userIcons.appendChild(signInBtn);
+        }
+    }
+}
+
+function setupSignOut() {
+    const modalItems = document.querySelectorAll('.user-modal-item');
+    modalItems.forEach(item => {
+        if (item.innerText.includes('Sign out')) {
+            item.onclick = () => {
+                localStorage.setItem('isLoggedIn', 'false');
+                window.location.reload();
+            };
+        }
+    });
+}
+
+// Handle Login/Signup Forms
+const loginForm = document.getElementById('loginForm');
+if (loginForm) {
+    loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        localStorage.setItem('isLoggedIn', 'true');
+        localStorage.setItem('userAvatar', 'https://picsum.photos/seed/user/200'); // Set mock avatar
+        window.location.href = 'index.html';
+    });
+}
+
+const signupForm = document.getElementById('signupForm');
+if (signupForm) {
+    signupForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        const password = document.getElementById('password').value;
+        if (password.length < 8) {
+            alert("Password must be at least 8 characters long.");
+            return;
+        }
+
+        localStorage.setItem('isLoggedIn', 'true');
+        localStorage.setItem('userAvatar', 'https://picsum.photos/seed/user/200'); // Set mock avatar
+        window.location.href = 'index.html';
+    });
+}
+
+// Handle Forgot Password Form
+const forgotPasswordForm = document.getElementById('forgotPasswordForm');
+if (forgotPasswordForm) {
+    forgotPasswordForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const email = document.getElementById('recoveryEmail').value;
+        alert(`Password reset link sent to ${email}`);
+        window.location.href = 'login.html';
+    });
+}
+
+document.addEventListener('DOMContentLoaded', checkAuth);

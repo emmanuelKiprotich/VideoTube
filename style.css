@@ -509,3 +509,48 @@ body.dark-mode .upload-area {
 body.dark-mode .settings-list li {
     border-bottom-color: #3e3e3e;
 }
+
+.profile-pic {
+    width: 32px;
+    height: 32px;
+    background-color: #ccc;
+    border-radius: 50%;
+    background-size: cover;
+    background-position: center;
+    cursor: pointer;
+}
+
+/* Authentication Pages */
+.auth-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f0f0f0;
+}
+
+.auth-box {
+    background: white;
+    padding: 40px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+}
+
+.auth-box .form-group input {
+    width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 15px;
+}
+
+.auth-footer {
+    margin-top: 20px;
+    font-size: 14px;
+}
+
+.auth-footer a {
+    color: #065fd4;
+    text-decoration: none;
+}
