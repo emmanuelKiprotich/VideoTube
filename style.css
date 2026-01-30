@@ -1,0 +1,511 @@
+body {
+    margin: 0;
+    font-family: Roboto, Arial, sans-serif;
+    background-color: #f9f9f9;
+}
+
+/* Navbar Styling */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background: white;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.menu-icon {
+    cursor: pointer;
+}
+
+.search-container {
+    display: flex;
+    flex-grow: 0.5;
+}
+
+.search-container input {
+    width: 100%;
+    padding: 8px 15px;
+    border: 1px solid #ccc;
+    border-radius: 20px 0 0 20px;
+    outline: none;
+}
+
+.search-container .search-btn {
+    padding: 8px 20px;
+    border: 1px solid #ccc;
+    border-left: none;
+    border-radius: 0 20px 20px 0;
+    cursor: pointer;
+}
+
+.voice-search-btn {
+    margin-left: 10px;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    border: none;
+    background-color: #f9f9f9;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+}
+
+.voice-search-btn:hover {
+    background-color: #e5e5e5;
+}
+
+/* Video Grid Styling */
+.video-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+    padding: 20px;
+}
+
+.video-card {
+    cursor: pointer;
+    position: relative;
+}
+
+.watch-later-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 10px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
+    font-size: 10px;
+    font-weight: bold;
+}
+
+.video-card:hover .watch-later-btn {
+    opacity: 1;
+}
+
+.remove-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background-color: rgba(200, 0, 0, 0.9);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 10px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
+    font-size: 10px;
+    font-weight: bold;
+}
+
+.thumbnail {
+    width: 100%;
+    border-radius: 12px;
+    transition: border-radius 0.2s;
+}
+
+.thumbnail:hover {
+    border-radius: 0;
+}
+
+.video-card:hover .remove-btn {
+    opacity: 1;
+}
+
+.video-info {
+    display: flex;
+    margin-top: 10px;
+    gap: 12px;
+}
+
+.channel-pic {
+    width: 36px;
+    height: 36px;
+    background-color: #ccc;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.text-info h3 {
+    font-size: 14px;
+    margin: 0;
+    line-height: 1.4;
+}
+
+.text-info p {
+    font-size: 12px;
+    color: #606060;
+    margin: 4px 0 0 0;
+}
+
+.main-body {
+    display: flex; /* This puts sidebar and grid side-by-side */
+}
+
+.sidebar-home {
+    width: 240px;
+    height: calc(100vh - 56px); /* Full height minus navbar height */
+    position: sticky;
+    top: 56px;
+    background-color: white;
+    padding-top: 10px;
+    overflow-y: auto; /* Allows sidebar to scroll if list is long */
+}
+
+.sidebar-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 24px;
+    cursor: pointer;
+    font-size: 14px;
+    border-radius: 10px;
+    margin: 0 10px;
+}
+
+.sidebar-item:hover {
+    background-color: #f2f2f2;
+}
+
+.sidebar-item.active {
+    background-color: #f2f2f2;
+    font-weight: bold;
+}
+
+.sidebar-item span {
+    margin-left: 20px;
+}
+
+hr {
+    border: 0;
+    height: 1px;
+    background-color: #e5e5e5;
+    margin: 10px 0;
+}
+
+/* Adjust the video grid to take the remaining space */
+.video-grid {
+    flex-grow: 1;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 16px;
+    padding: 20px;
+}
+
+@media (max-width: 768px) {
+    .sidebar-home {
+        width: 72px; /* Slim sidebar showing only icons */
+    }
+    .sidebar-item span {
+        display: none; /* Hide the text, show only icons */
+    }
+}
+
+/* This container holds both the Sidebar and the Video Grid */
+.main-wrapper {
+    display: flex;          /* Force children to sit side-by-side */
+    align-items: flex-start; /* Align them to the top */
+    width: 100%;
+}
+
+/* This ensures the sidebar doesn't shrink */
+.sidebar-watch {
+    width: 240px;           
+    flex-shrink: 0;         
+    position: sticky;       
+    top: 80px;              /* Keeps it visible while you scroll */
+    height: 100vh;
+    overflow-y: auto;
+}
+
+/* Collapsed Sidebar Styles */
+.sidebar-watch.collapsed {
+    width: 72px;
+}
+
+.sidebar-watch.collapsed .sidebar-item span,
+.sidebar-watch.collapsed h3,
+.sidebar-watch.collapsed #showMoreBtn {
+    display: none;
+}
+
+.sidebar-watch.collapsed .sidebar-item {
+    justify-content: center;
+    padding: 10px 0;
+}
+
+.sidebar-watch.collapsed .sidebar-item .channel-pic {
+    margin-right: 0 !important; /* Override inline style */
+}
+
+/* This ensures the video grid takes up the rest of the space */
+.video-grid {
+    flex-grow: 1;           
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    padding: 20px;
+}
+
+/* Specific layout for Shorts */
+.shorts-grid {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 40px;
+}
+
+.shorts-grid .video-card {
+    max-width: 360px;
+    width: 100%;
+}
+
+.shorts-grid .thumbnail {
+    aspect-ratio: 9 / 16;
+    object-fit: cover;
+}
+
+/* Library Page Styling */
+.library-view {
+    flex-grow: 1;
+    padding: 20px;
+    overflow-x: hidden;
+}
+
+.horizontal-scroll {
+    display: flex;
+    overflow-x: auto;
+    gap: 20px;
+    padding-bottom: 16px;
+    margin-bottom: 20px;
+}
+
+.horizontal-scroll .video-card {
+    min-width: 260px;
+    width: 260px;
+}
+
+/* Dark Mode Styles */
+body.dark-mode {
+    background-color: #181818;
+    color: white;
+}
+
+body.dark-mode .navbar,
+body.dark-mode .sidebar-watch {
+    background-color: #202020;
+    color: white;
+}
+
+body.dark-mode .sidebar-item:hover,
+body.dark-mode .sidebar-item.active {
+    background-color: #383838;
+}
+
+body.dark-mode .search-container input {
+    background-color: #121212;
+    color: white;
+    border-color: #303030;
+}
+
+body.dark-mode .search-container button {
+    background-color: #303030;
+    border-color: #303030;
+    color: white;
+}
+
+body.dark-mode .voice-search-btn {
+    background-color: #303030;
+    color: white;
+}
+
+body.dark-mode .voice-search-btn:hover {
+    background-color: #404040;
+}
+
+body.dark-mode .text-info p {
+    color: #aaa;
+}
+
+/* User Settings Modal */
+.user-icons {
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.user-modal {
+    display: none;
+    position: absolute;
+    top: 50px;
+    right: 0;
+    background-color: white;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border-radius: 8px;
+    width: 220px;
+    z-index: 1000;
+    flex-direction: column;
+    padding: 8px 0;
+    border: 1px solid #e5e5e5;
+}
+
+.user-modal.active {
+    display: flex;
+}
+
+.user-modal-item {
+    padding: 10px 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    color: #333;
+}
+
+.user-modal-item:hover {
+    background-color: #f2f2f2;
+}
+
+body.dark-mode .user-modal {
+    background-color: #282828;
+    border-color: #3e3e3e;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+body.dark-mode .user-modal-item {
+    color: #f1f1f1;
+}
+
+body.dark-mode .user-modal-item:hover {
+    background-color: #3e3e3e;
+}
+
+/* Notification Badge */
+.notification-wrapper {
+    position: relative;
+    cursor: pointer;
+    margin-right: 15px;
+    display: flex;
+    align-items: center;
+}
+
+.badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background-color: #cc0000;
+    color: white;
+    font-size: 10px;
+    padding: 2px 5px;
+    border-radius: 50%;
+    border: 2px solid white;
+    font-weight: bold;
+}
+
+/* Page Layouts for New Pages */
+.content-container {
+    padding: 20px;
+    max-width: 800px;
+    margin: 0 auto;
+    flex-grow: 1;
+}
+
+.profile-header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.profile-avatar-large {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background-color: #888;
+}
+
+.form-group { margin-bottom: 15px; }
+.form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+.form-group input, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+.btn-primary { background-color: #065fd4; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; }
+
+.premium-banner { background: linear-gradient(45deg, #FFD700, #FFA500); padding: 40px; border-radius: 10px; text-align: center; color: white; margin-bottom: 20px; }
+
+/* Upload Page Styles */
+.upload-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 80vh;
+    text-align: center;
+}
+
+.upload-area {
+    border: 2px dashed #ccc;
+    padding: 50px;
+    border-radius: 10px;
+    width: 60%;
+    margin-bottom: 20px;
+    background-color: #f9f9f9;
+}
+
+.upload-icon {
+    font-size: 64px;
+    color: #909090;
+    margin-bottom: 20px;
+}
+
+body.dark-mode .upload-area {
+    background-color: #202020;
+    border-color: #444;
+}
+
+/* Progress Bar */
+.progress-container {
+    width: 100%;
+    background-color: #e0e0e0;
+    border-radius: 4px;
+    margin-top: 15px;
+    height: 4px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    width: 0%;
+    background-color: #065fd4;
+    transition: width 0.2s;
+}
+
+/* Settings Page List */
+.settings-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.settings-list li {
+    padding: 15px 0;
+    border-bottom: 1px solid #e5e5e5;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+body.dark-mode .settings-list li {
+    border-bottom-color: #3e3e3e;
+}

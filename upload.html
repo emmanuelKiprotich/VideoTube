@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Video - VideoTube</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">
+            <span class="menu-icon">☰</span>
+            <img src="pictures/VideoTube.png.png" alt="Logo" width="90">
+        </div>
+        <div class="search-container">
+            <input type="text" placeholder="Search" id="searchInput">
+            <button class="search-btn">🔍</button>
+            <button class="voice-search-btn">🎤</button>
+        </div>
+        <div class="user-icons">
+            <span id="darkModeToggle" style="cursor: pointer; margin-right: 15px;">🌙</span>
+            <a href="upload.html" title="Create" style="text-decoration: none; color: inherit; margin-right: 15px; font-size: 20px;">📹</a>
+            <div class="notification-wrapper">
+                <span>🔔</span>
+                <span class="badge">3</span>
+            </div>
+            <div class="profile-pic"></div>
+            <div class="user-modal" id="userModal">
+                <a href="profile.html" style="text-decoration: none;"><div class="user-modal-item"><span>👤</span> Your Channel</div></a>
+                <a href="settings.html" style="text-decoration: none;"><div class="user-modal-item"><span>⚙️</span> Settings</div></a>
+                <a href="premium.html" style="text-decoration: none;"><div class="user-modal-item"><span>💎</span> Go Premium</div></a>
+                <a href="feedback.html" style="text-decoration: none;"><div class="user-modal-item"><span>📝</span> Send Feedback</div></a>
+                <div class="user-modal-item"><span>❓</span> Help</div>
+                <div class="user-modal-item"><span>🚪</span> Sign out</div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-wrapper">
+        <aside class="sidebar-watch">
+            <a href="index.html" style="text-decoration: none; color: inherit;"><div class="sidebar-item">🏠 <span>Home</span></div></a>
+            <a href="shorts.html" style="text-decoration: none; color: inherit;"><div class="sidebar-item">🩳 <span>Shorts</span></div></a>
+            <a href="subscription.html" style="text-decoration: none; color: inherit;"><div class="sidebar-item">📺 <span>Subscriptions</span></div></a>
+            <hr>
+            <a href="library.html" style="text-decoration: none; color: inherit;"><div class="sidebar-item">📚 <span>Library</span></div></a>
+            <a href="playlists.html" style="text-decoration: none; color: inherit;"><div class="sidebar-item">📂 <span>Playlists</span></div></a>
+            <a href="liked.html" style="text-decoration: none; color: inherit;"><div class="sidebar-item">👍 <span>Liked Videos</span></div></a>
+            <a href="downloads.html" style="text-decoration: none; color: inherit;"><div class="sidebar-item">⬇️ <span>Downloads</span></div></a>
+            <hr>
+            <a href="explore.html" style="text-decoration: none; color: inherit;"><div class="sidebar-item">🧭 <span>Explore</span></div></a>
+            <hr>
+            <h3 style="padding-left: 24px; font-size: 16px; margin: 10px 0;">More from VideoTube</h3>
+            <a href="premium.html" style="text-decoration: none; color: inherit;"><div class="sidebar-item">💎 <span>VideoTube Premium</span></div></a>
+            <hr>
+            <a href="settings.html" style="text-decoration: none; color: inherit;"><div class="sidebar-item">⚙️ <span>Settings</span></div></a>
+            <div class="sidebar-item">❓ <span>Help</span></div>
+            <a href="feedback.html" style="text-decoration: none; color: inherit;"><div class="sidebar-item">📝 <span>Send Feedback</span></div></a>
+        </aside>
+
+        <main class="content-container upload-container">
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">☁️</div>
+                <h2>Drag and drop video files to upload</h2>
+                <p>Your videos will be private until you publish them.</p>
+                <button class="btn-primary" id="selectFilesBtn" style="margin-top: 20px;">SELECT FILES</button>
+                <input type="file" id="fileInput" accept="video/*" style="display: none;">
+            </div>
+            <div id="videoPreviewContainer" style="display: none; width: 100%; max-width: 600px; margin-bottom: 20px;">
+                <video id="videoPreview" controls style="width: 100%; border-radius: 12px; background: black;"></video>
+                <div style="margin-top: 20px; text-align: left;">
+                    <h3 id="previewTitle"></h3>
+                    <p id="previewSize" style="color: #606060;"></p>
+                    <div class="progress-container">
+                        <div class="progress-bar" id="uploadProgressBar"></div>
+                    </div>
+                    <p id="uploadStatus" style="font-size: 12px; color: #606060; margin-top: 5px;">Waiting...</p>
+                    <button class="btn-primary" onclick="location.reload()" style="margin-top: 15px;">Cancel / Upload Another</button>
+                </div>
+            </div>
+            <p style="font-size: 12px; color: #606060;">By submitting your videos to VideoTube, you acknowledge that you agree to VideoTube's Terms of Service and Community Guidelines.</p>
+        </main>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
