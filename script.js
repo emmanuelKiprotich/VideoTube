@@ -1,30 +1,5 @@
-// --- Supabase Configuration ---
-const SUPABASE_URL = 'https://ddsyyrqctkehzujntqxv.supabase.co'; // Replace with your Supabase URL
-const SUPABASE_KEY = 'YeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRkc3l5cnFjdGtlaHp1am50cXh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk4MDI4OTUsImV4cCI6MjA4NTM3ODg5NX0.SEjZGh4MqicoMX--Pbo0r9vgV0DbArNjXDgGHZrjHdoeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRkc3l5cnFjdGtlaHp1am50cXh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk4MDI4OTUsImV4cCI6MjA4NTM3ODg5NX0.SEjZGh4MqicoMX--Pbo0r9vgV0DbArNjXDgGHZrjHdo'; // Replace with your Supabase Anon Key
-let supabaseClient = null;
-
-// Helper to load and get Supabase client
-function getSupabase() {
-    return new Promise((resolve, reject) => {
-        if (supabaseClient) return resolve(supabaseClient);
-        
-        if (typeof supabase !== 'undefined') {
-            const { createClient } = supabase;
-            supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
-            return resolve(supabaseClient);
-        }
-
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
-        script.onload = () => {
-            const { createClient } = supabase;
-            supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
-            resolve(supabaseClient);
-        };
-        script.onerror = reject;
-        document.head.appendChild(script);
-    });
-}
+// --- API Configuration ---
+const API_URL = 'http://localhost:3000/api';
 
 document.getElementById('searchInput').addEventListener('keyup', function() {
     // 1. Get the text the user typed and convert to lowercase
@@ -82,17 +57,30 @@ document.addEventListener('click', async function(e) {
         e.stopPropagation(); // Stop the click from bubbling further
 
         const card = e.target.closest('.video-card');
-        const videoData = {
-            // Use the thumbnail source as a unique ID for this example
-            id: card.querySelector('.thumbnail').src,
-            thumbnail: card.querySelector('.thumbnail').src,
-            title: card.querySelector('.video-title').innerText,
-            // The first <p> inside text-info is assumed to be the channel
-            channel: card.querySelector('.text-info p').innerText
-        };
+        const videoId = card.getAttribute('data-video-id'); // Get the actual video ID
+        
+        // Fetch video details to get all necessary info for watch_later table
+        try {
+            const res = await fetch(`${API_URL}/videos/${videoId}`);
+            if (!res.ok) throw new Error('Failed to fetch video details');
+            const videoDetails = await res.json();
 
-        await addToWatchLater(videoData);
-        alert(`'${videoData.title}' added to Watch Later!`);
+            // The videoDetails object from the backend has all the fields needed
+            // We need to map it to the structure expected by watch_later
+            const videoToSave = {
+                id: videoDetails.id,
+                title: videoDetails.title,
+                thumbnail: videoDetails.thumbnail_url,
+                channel: videoDetails.channel_name,
+                // Add other fields if needed for display in watch later list
+            };
+
+            await addToWatchLater(videoToSave);
+            alert(`'${videoDetails.title}' added to Watch Later!`);
+        } catch (error) {
+            console.error('Error adding to watch later:', error);
+            alert('Failed to add video to Watch Later.');
+        }
     }
     
     // Check if a remove button was clicked
@@ -106,16 +94,19 @@ document.addEventListener('click', async function(e) {
 });
 
 async function addToWatchLater(video) {
-    const sb = await getSupabase();
-    const { data: { session } } = await sb.auth.getSession();
+    const user = getCurrentUser();
 
-    if (session) {
-        // Save to Supabase DB
-        const { error } = await sb.from('watch_later').insert({
-            user_id: session.user.id,
-            video_data: video
-        });
-        if (error) console.error('Error adding to watch later:', error);
+    if (user) {
+        // Save to MySQL via API
+        try {
+            await fetch(`${API_URL}/watch-later`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: user.id, video: video })
+            });
+        } catch (error) {
+            console.error('Error adding to watch later:', error);
+        }
     } else {
         // Fallback to localStorage for guests
         let watchLaterList = JSON.parse(localStorage.getItem('watchLater')) || [];
@@ -127,18 +118,18 @@ async function addToWatchLater(video) {
 }
 
 async function removeFromWatchLater(id) {
-    const sb = await getSupabase();
-    const { data: { session } } = await sb.auth.getSession();
+    const user = getCurrentUser();
 
-    if (session) {
-        // Remove from Supabase DB using JSON containment to match the video ID
-        const { error } = await sb
-            .from('watch_later')
-            .delete()
-            .eq('user_id', session.user.id)
-            .contains('video_data', { id: id });
-
-        if (!error) renderWatchLater();
+    if (user) {
+        // Remove from MySQL via API
+        try {
+            await fetch(`${API_URL}/watch-later`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: user.id, video_id: id })
+            });
+            renderWatchLater();
+        } catch (error) { console.error(error); }
     } else {
         let watchLaterList = JSON.parse(localStorage.getItem('watchLater')) || [];
         watchLaterList = watchLaterList.filter(v => v.id !== id);
@@ -152,19 +143,24 @@ async function renderWatchLater() {
     // Only run this function if we are on a page with the watch later container (library.html)
     if (!container) return;
 
-    const sb = await getSupabase();
-    const { data: { session } } = await sb.auth.getSession();
+    const user = getCurrentUser(); // Get current user
     
     let watchLaterList = [];
 
-    if (session) {
-        // Fetch from DB
-        const { data, error } = await sb.from('watch_later').select('video_data');
-        if (data) {
-            watchLaterList = data.map(row => row.video_data);
+    if (user) {
+        // Fetch from MySQL API
+        try {
+            const res = await fetch(`${API_URL}/watch-later?user_id=${user.id}`);
+            if (res.ok) {
+                watchLaterList = await res.json();
+            } else {
+                console.error('Error fetching watch later videos:', res.statusText);
+            }
+        } catch (error) {
+            console.error('Error fetching watch later videos:', error);
         }
     } else {
-        // Fetch from LocalStorage
+        // Fetch from LocalStorage for guests
         watchLaterList = JSON.parse(localStorage.getItem('watchLater')) || [];
     }
 
@@ -188,18 +184,24 @@ async function renderWatchLater() {
                 </a>`;
             container.innerHTML += videoCardHTML;
         });
+    } else {
+        if (placeholder) {
+            placeholder.style.display = 'block';
+            placeholder.innerText = 'No videos in Watch Later.';
+        }
+        container.innerHTML = ''; // Clear any previous videos if list becomes empty
     }
 }
 
 // --- Video Grid Population ---
 async function fetchVideos() {
-    const sb = await getSupabase();
-    const { data, error } = await sb.from('videos').select('*');
-    if (error) {
+    try {
+        const res = await fetch(`${API_URL}/videos`);
+        return await res.json();
+    } catch (error) {
         console.error('Error fetching videos:', error);
         return [];
     }
-    return data;
 }
 
 function renderVideos(videos) {
@@ -231,8 +233,6 @@ function renderVideos(videos) {
 // Run the render function when the page has loaded
 document.addEventListener('DOMContentLoaded', async () => {
     renderWatchLater();
-    const videos = await fetchVideos();
-    renderVideos(videos);
 });
 
 // --- Dark Mode Toggle ---
@@ -327,41 +327,66 @@ function handleFileUpload(file) {
     uploadArea.style.display = 'none';
     videoPreviewContainer.style.display = 'block';
     
-    simulateUpload();
+    uploadVideo(file);
 }
 
-function simulateUpload() {
+function uploadVideo(file) {
+    const user = getCurrentUser();
+    if (!user) {
+        alert("You must be logged in to upload.");
+        window.location.href = 'login.html';
+        return;
+    }
+
     const progressBar = document.getElementById('uploadProgressBar');
     const statusText = document.getElementById('uploadStatus');
     if (!progressBar || !statusText) return;
 
-    let width = 0;
-    progressBar.style.width = '0%';
-    statusText.innerText = 'Uploading 0%';
+    const formData = new FormData();
+    formData.append('video', file);
+    // Use filename as title, removing extension
+    formData.append('title', file.name.replace(/\.[^/.]+$/, ""));
+    formData.append('channel_name', user.full_name || 'Unknown');
+    formData.append('channel_avatar_url', user.avatar_url || 'https://picsum.photos/seed/avatar/50');
     
-    const interval = setInterval(() => {
-        if (width >= 100) {
-            clearInterval(interval);
-            statusText.innerText = 'Processing complete';
-            progressBar.style.backgroundColor = '#4CAF50';
-        } else {
-            width += Math.random() * 5; 
-            if (width > 100) width = 100;
-            progressBar.style.width = width + '%';
-            statusText.innerText = `Uploading ${Math.floor(width)}%`;
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${API_URL}/upload`, true);
+
+    xhr.upload.onprogress = function(e) {
+        if (e.lengthComputable) {
+            const percentComplete = (e.loaded / e.total) * 100;
+            progressBar.style.width = percentComplete + '%';
+            statusText.innerText = `Uploading ${Math.floor(percentComplete)}%`;
         }
-    }, 200);
+    };
+
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+            statusText.innerText = 'Upload complete! Redirecting...';
+            progressBar.style.backgroundColor = '#4CAF50';
+            setTimeout(() => window.location.href = 'index.html', 1500);
+        } else {
+            statusText.innerText = 'Upload failed';
+            progressBar.style.backgroundColor = '#f44336';
+        }
+    };
+
+    xhr.onerror = function() {
+        statusText.innerText = 'Network Error';
+        progressBar.style.backgroundColor = '#f44336';
+    };
+
+    xhr.send(formData);
 }
 
 // --- Dynamic User Avatar Logic ---
 async function loadUserAvatar() {
-    const sb = await getSupabase();
-    const { data: { session } } = await sb.auth.getSession();
+    const user = getCurrentUser();
 
     let userAvatarUrl = 'https://picsum.photos/seed/currentUser/200'; // Default
 
-    if (session?.user?.user_metadata?.avatar_url) {
-        userAvatarUrl = session.user.user_metadata.avatar_url;
+    if (user && user.avatar_url) {
+        userAvatarUrl = user.avatar_url;
     } else if (localStorage.getItem('userAvatar')) {
         userAvatarUrl = localStorage.getItem('userAvatar');
     }
@@ -388,12 +413,15 @@ async function loadUserAvatar() {
 document.addEventListener('DOMContentLoaded', loadUserAvatar);
 
 // --- Authentication Logic ---
+function getCurrentUser() {
+    const userStr = localStorage.getItem('currentUser');
+    return userStr ? JSON.parse(userStr) : null;
+}
+
 async function checkAuth() {
     const userIcons = document.querySelector('.user-icons');
     
-    const sb = await getSupabase();
-    const { data: { session } } = await sb.auth.getSession();
-    const isLoggedIn = !!session;
+    const isLoggedIn = !!getCurrentUser();
     
     // Redirect protected pages if not logged in
     const path = window.location.pathname;
@@ -417,7 +445,7 @@ async function checkAuth() {
         if (signInBtn) signInBtn.remove();
         
         // Setup Sign Out listener
-        setupSignOut(sb);
+        setupSignOut();
     } else {
         // Hide auth elements
         authElements.forEach(el => el.style.display = 'none');
@@ -443,8 +471,8 @@ function updateUserProfileUI(user) {
     const profileName = document.querySelector('.profile-info h1');
     const profileHandle = document.querySelector('.profile-info p');
     
-    if (profileName && user.user_metadata?.full_name) {
-        profileName.innerText = user.user_metadata.full_name;
+    if (profileName && user.full_name) {
+        profileName.innerText = user.full_name;
     }
     
     if (profileHandle && user.email) {
@@ -457,12 +485,12 @@ function updateUserProfileUI(user) {
     }
 }
 
-function setupSignOut(sb) {
+function setupSignOut() {
     const modalItems = document.querySelectorAll('.user-modal-item');
     modalItems.forEach(item => {
         if (item.innerText.includes('Sign out')) {
             item.onclick = async () => {
-                await sb.auth.signOut();
+                localStorage.removeItem('currentUser');
                 window.location.href = 'index.html';
             };
         }
@@ -485,21 +513,25 @@ if (loginForm) {
         btn.disabled = true;
         if (errorMsg) errorMsg.style.display = 'none';
         
-        const sb = await getSupabase();
-        const { data, error } = await sb.auth.signInWithPassword({ email, password });
-        
-        if (error) {
+        try {
+            const res = await fetch(`${API_URL}/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            const data = await res.json();
+
+            if (!res.ok) throw new Error(data.error || 'Login failed');
+
+            localStorage.setItem('currentUser', JSON.stringify(data.user));
+            window.location.href = 'index.html';
+        } catch (error) {
             if (errorMsg) {
                 errorMsg.innerText = error.message;
                 errorMsg.style.display = 'block';
-            } else {
-                alert('Login failed: ' + error.message);
             }
             btn.innerText = originalText;
             btn.disabled = false;
-        } else {
-            // Login successful, redirect to home
-            window.location.href = 'index.html';
         }
     });
 }
@@ -520,30 +552,25 @@ if (signupForm) {
         btn.disabled = true;
         if (errorMsg) errorMsg.style.display = 'none';
         
-        const sb = await getSupabase();
-        const { data, error } = await sb.auth.signUp({
-            email: email,
-            password: password,
-            options: { data: { full_name: name } }
-        });
+        try {
+            const res = await fetch(`${API_URL}/signup`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password, full_name: name })
+            });
+            const data = await res.json();
 
-        if (error) {
+            if (!res.ok) throw new Error(data.error || 'Signup failed');
+
+            localStorage.setItem('currentUser', JSON.stringify(data.user));
+            window.location.href = 'index.html';
+        } catch (error) {
             if (errorMsg) {
                 errorMsg.innerText = error.message;
                 errorMsg.style.display = 'block';
-            } else {
-                alert('Signup failed: ' + error.message);
             }
             btn.innerText = originalText;
             btn.disabled = false;
-        } else {
-            // Check if session was created immediately (Auto Confirm enabled in Supabase)
-            if (data.session) {
-                window.location.href = 'index.html';
-            } else {
-                alert('Signup successful! Please check your email to confirm.');
-                window.location.href = 'login.html';
-            }
         }
     });
 }
@@ -554,25 +581,146 @@ if (forgotPasswordForm) {
     forgotPasswordForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = document.getElementById('recoveryEmail').value;
-        
-        const sb = await getSupabase();
-        const { error } = await sb.auth.resetPasswordForEmail(email, {
-            redirectTo: window.location.origin + '/reset_password.html',
-        });
-
-        if (error) {
-            alert('Error: ' + error.message);
-        } else {
-            alert(`Password reset link sent to ${email}`);
-            window.location.href = 'login.html';
-        }
+        // Mock functionality for now
+        alert(`If an account exists for ${email}, a password reset link has been sent.`);
+        window.location.href = 'login.html';
     });
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
     await checkAuth();
     // If on profile page and logged in, update UI
-    const sb = await getSupabase();
-    const { data: { session } } = await sb.auth.getSession();
-    if (session) updateUserProfileUI(session.user);
+    const user = getCurrentUser();
+    if (user) updateUserProfileUI(user);
+});
+
+// --- Watch Page Logic ---
+function getVideoIdFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('v');
+}
+
+async function fetchVideoDetails(videoId) {
+    try {
+        const res = await fetch(`${API_URL}/videos/${videoId}`);
+        if (!res.ok) throw new Error('Failed to fetch video details');
+        return await res.json();
+    } catch (error) {
+        console.error('Error fetching video details:', error);
+        return null;
+    }
+}
+
+function renderVideoDetails(video) {
+    if (!video) return;
+
+    const videoPlayer = document.getElementById('videoPlayer');
+    const videoTitle = document.getElementById('videoTitle');
+    const channelAvatar = document.getElementById('channelAvatar');
+    const channelName = document.getElementById('channelName');
+    const viewCountAndDate = document.getElementById('viewCountAndDate');
+
+    if (videoPlayer) videoPlayer.src = video.video_url;
+    if (videoTitle) videoTitle.innerText = video.title;
+    if (channelAvatar) {
+        channelAvatar.style.backgroundImage = `url('${video.channel_avatar_url}')`;
+        channelAvatar.style.backgroundSize = 'cover';
+        channelAvatar.style.backgroundPosition = 'center';
+    }
+    if (channelName) channelName.innerText = video.channel_name;
+    if (viewCountAndDate) viewCountAndDate.innerText = `${video.view_count} views • ${new Date(video.created_at).toLocaleDateString()}`;
+}
+
+async function fetchComments(videoId) {
+    try {
+        const res = await fetch(`${API_URL}/comments/${videoId}`);
+        if (!res.ok) throw new Error('Failed to fetch comments');
+        return await res.json();
+    } catch (error) {
+        console.error('Error fetching comments:', error);
+        return [];
+    }
+}
+
+function renderComments(comments) {
+    const commentsList = document.getElementById('commentsList');
+    const commentCount = document.getElementById('commentCount');
+    if (!commentsList) return;
+
+    commentsList.innerHTML = ''; // Clear existing comments
+    if (commentCount) commentCount.innerText = `(${comments.length})`;
+
+    comments.forEach(comment => {
+        const commentElement = document.createElement('div');
+        commentElement.classList.add('comment-item');
+        commentElement.innerHTML = `
+            <div class="user-avatar" style="background-image: url('${comment.avatar_url || 'https://picsum.photos/seed/avatar/50'}');"></div>
+            <div class="comment-content">
+                <div class="comment-author">${comment.full_name} <span class="comment-date">${new Date(comment.created_at).toLocaleString()}</span></div>
+                <div class="comment-text">${comment.comment_text}</div>
+            </div>
+        `;
+        commentsList.appendChild(commentElement);
+    });
+}
+
+async function postComment(videoId, userId, commentText) {
+    try {
+        const res = await fetch(`${API_URL}/comments`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ video_id: videoId, user_id: userId, comment_text: commentText })
+        });
+        if (!res.ok) throw new Error('Failed to post comment');
+        return await res.json();
+    } catch (error) {
+        console.error('Error posting comment:', error);
+        alert('Failed to post comment.');
+        return null;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    await checkAuth();
+    const user = getCurrentUser();
+    if (user) updateUserProfileUI(user);
+
+    if (window.location.pathname.includes('index.html') || window.location.pathname === '/') {
+        const videos = await fetchVideos();
+        renderVideos(videos);
+    }
+
+    if (window.location.pathname.includes('watch.html')) {
+        const videoId = getVideoIdFromUrl();
+        if (videoId) {
+            const video = await fetchVideoDetails(videoId);
+            renderVideoDetails(video);
+
+            const comments = await fetchComments(videoId);
+            renderComments(comments);
+
+            const postCommentBtn = document.getElementById('postCommentBtn');
+            const commentInput = document.getElementById('commentInput');
+            if (postCommentBtn && commentInput) {
+                postCommentBtn.addEventListener('click', async () => {
+                    const currentUser = getCurrentUser();
+                    if (!currentUser) {
+                        alert('You must be logged in to comment.');
+                        window.location.href = 'login.html';
+                        return;
+                    }
+                    const commentText = commentInput.value.trim();
+                    if (commentText) {
+                        const newComment = await postComment(videoId, currentUser.id, commentText);
+                        if (newComment) {
+                            commentInput.value = ''; // Clear input
+                            // Re-fetch and re-render comments to include the new one
+                            const updatedComments = await fetchComments(videoId);
+                            renderComments(updatedComments);
+                        }
+                    }
+                });
+            }
+        }
+    }
 });
