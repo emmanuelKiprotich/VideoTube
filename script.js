@@ -1,26 +1,30 @@
 // --- API Configuration ---
 const API_URL = 'http://localhost:3000/api';
 
-document.getElementById('searchInput').addEventListener('keyup', function() {
-    // 1. Get the text the user typed and convert to lowercase
-    let filter = this.value.toLowerCase();
-    
-    // 2. Grab all the video cards
-    let videoCards = document.querySelectorAll('.video-card');
+// Check if searchInput element exists before adding event listener
+const searchInput = document.getElementById('searchInput');
+if (searchInput) {
+    searchInput.addEventListener('keyup', function() {
+        // 1. Get the text the user typed and convert to lowercase
+        let filter = this.value.toLowerCase();
+        
+        // 2. Grab all the video cards
+        let videoCards = document.querySelectorAll('.video-card');
 
-    // 3. Loop through each card
-    videoCards.forEach(card => {
-        // Find the title inside this specific card
-        let title = card.querySelector('.video-title').innerText.toLowerCase();
+        // 3. Loop through each card
+        videoCards.forEach(card => {
+            // Find the title inside this specific card
+            let title = card.querySelector('.video-title').innerText.toLowerCase();
 
-        // 4. If the title includes the search text, show it; otherwise, hide it
-        if (title.includes(filter)) {
-            card.style.display = ""; // Show
-        } else {
-            card.style.display = "none"; // Hide
-        }
+            // 4. If the title includes the search text, show it; otherwise, hide it
+            if (title.includes(filter)) {
+                card.style.display = ""; // Show
+            } else {
+                card.style.display = "none"; // Hide
+            }
+        });
     });
-});
+}
 
 // Show More / Show Less logic for Sidebar
 const showMoreBtn = document.getElementById('showMoreBtn');
@@ -530,6 +534,7 @@ if (loginForm) {
                 errorMsg.innerText = error.message;
                 errorMsg.style.display = 'block';
             }
+            console.error('Login error:', error); // Log error to console
             btn.innerText = originalText;
             btn.disabled = false;
         }
@@ -569,6 +574,7 @@ if (signupForm) {
                 errorMsg.innerText = error.message;
                 errorMsg.style.display = 'block';
             }
+            console.error('Signup error:', error); // Log error to console
             btn.innerText = originalText;
             btn.disabled = false;
         }
@@ -685,9 +691,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     const user = getCurrentUser();
     if (user) updateUserProfileUI(user);
 
+    // Logic specific to index.html
     if (window.location.pathname.includes('index.html') || window.location.pathname === '/') {
         const videos = await fetchVideos();
         renderVideos(videos);
+    }
+
+    // Logic specific to library.html
+    if (window.location.pathname.includes('library.html')) {
+        renderWatchLater();
     }
 
     if (window.location.pathname.includes('watch.html')) {

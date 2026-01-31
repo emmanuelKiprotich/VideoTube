@@ -57,12 +57,15 @@ const upload = multer({ storage: storage });
 // --- Auth Routes ---
 
 app.post('/api/signup', (req, res) => {
+    console.log('Received signup request:', req.body);
     const { email, password, full_name } = req.body;
     const avatar_url = `https://ui-avatars.com/api/?name=${encodeURIComponent(full_name)}&background=random`;
     
     const sql = 'INSERT INTO users (email, password, full_name, avatar_url) VALUES (?, ?, ?, ?)';
+    console.log('Executing SQL for signup:', sql, [email, password, full_name, avatar_url]);
     db.query(sql, [email, password, full_name, avatar_url], (err, result) => {
         if (err) {
+            console.error('Database error during signup:', err);
             if (err.code === 'ER_DUP_ENTRY') {
                 return res.status(400).json({ error: 'Email already exists' });
             }
@@ -70,23 +73,31 @@ app.post('/api/signup', (req, res) => {
         }
         // Return the new user
         const newUser = { id: result.insertId, email, full_name, avatar_url };
+        console.log('Signup successful, new user ID:', result.insertId);
         res.json({ user: newUser });
     });
 });
 
 app.post('/api/login', (req, res) => {
+    console.log('Received login request:', req.body);
     const { email, password } = req.body;
     
     const sql = 'SELECT * FROM users WHERE email = ? AND password = ?';
+    console.log('Executing SQL for login:', sql, [email, password]);
     db.query(sql, [email, password], (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
+        if (err) {
+            console.error('Database error during login:', err);
+            return res.status(500).json({ error: err.message });
+        }
         
         if (results.length > 0) {
+            console.log('Login successful for user:', email);
             const user = results[0];
             // Don't send password back
             delete user.password;
             res.json({ user });
         } else {
+            console.log('Invalid login credentials for email:', email);
             res.status(401).json({ error: 'Invalid credentials' });
         }
     });
