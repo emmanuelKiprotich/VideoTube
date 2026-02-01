@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VideoTube Music</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">
+            <span class="menu-icon">☰</span>
+            <img src="pictures/VideoTube.png.png" alt="Logo" width="90">
+        </div>
+        <div class="search-container">
+            <input type="text" placeholder="Search music" id="searchInput">
+            <button class="search-btn">🔍</button>
+            <button class="voice-search-btn">🎤</button>
+        </div>
+        <div class="user-icons">
+            <span id="darkModeToggle" style="cursor: pointer; margin-right: 15px;">🌙</span>
+            <a href="upload.html" title="Create" style="text-decoration: none; color: inherit; margin-right: 15px; font-size: 20px;">📹</a>
+            <div class="notification-wrapper">
+                <span>🔔</span>
+                <span class="badge">3</span>
+            </div>
+            <div class="profile-pic"></div>
+        </div>
+    </nav>
+
+    <div class="main-wrapper">
+        <aside class="sidebar-watch">
+            <a href="index.html" style="text-decoration: none; color: inherit;"><div class="sidebar-item">🏠 <span>Home</span></div></a>
+            <a href="shorts.html" style="text-decoration: none; color: inherit;"><div class="sidebar-item">🩳 <span>Shorts</span></div></a>
+            <a href="subscription.html" style="text-decoration: none; color: inherit;"><div class="sidebar-item">📺 <span>Subscriptions</span></div></a>
+            <hr>
+            <a href="library.html" style="text-decoration: none; color: inherit;"><div class="sidebar-item">📚 <span>Library</span></div></a>
+            <a href="playlists.html" style="text-decoration: none; color: inherit;"><div class="sidebar-item">📂 <span>Playlists</span></div></a>
+            <a href="liked.html" style="text-decoration: none; color: inherit;"><div class="sidebar-item">👍 <span>Liked Videos</span></div></a>
+            <a href="downloads.html" style="text-decoration: none; color: inherit;"><div class="sidebar-item">⬇️ <span>Downloads</span></div></a>
+            <hr>
+            <a href="explore.html" style="text-decoration: none; color: inherit;"><div class="sidebar-item">🧭 <span>Explore</span></div></a>
+            <hr>
+            <h3 style="padding-left: 24px; font-size: 16px; margin: 10px 0;">More from VideoTube</h3>
+            <a href="premium.html" style="text-decoration: none; color: inherit;"><div class="sidebar-item">💎 <span>VideoTube Premium</span></div></a>
+            <a href="videotube_music.html" style="text-decoration: none; color: inherit;"><div class="sidebar-item active">🎵 <span>VideoTube Music</span></div></a>
+            <a href="videotube_kids.html" style="text-decoration: none; color: inherit;"><div class="sidebar-item">👶 <span>VideoTube Kids</span></div></a>
+            <hr>
+            <a href="settings.html" style="text-decoration: none; color: inherit;"><div class="sidebar-item">⚙️ <span>Settings</span></div></a>
+            <a href="help.html" style="text-decoration: none; color: inherit;"><div class="sidebar-item">❓ <span>Help</span></div></a>
+            <a href="feedback.html" style="text-decoration: none; color: inherit;"><div class="sidebar-item">📝 <span>Send Feedback</span></div></a>
+        </aside>
+
+        <main class="content-container">
+            <h2 style="margin-bottom: 20px;">VideoTube Music</h2>
+            <p>Stream your favorite songs, discover new artists, and create playlists.</p>
+
+            <div class="music-player-container">
+                <audio id="audioPlayer" controls autoplay></audio>
+                <div class="current-track-info">
+                    <h3 id="currentTrackTitle">Select a song to play</h3>
+                    <p id="currentTrackArtist"></p>
+                    <img id="currentTrackThumbnail" src="https://picsum.photos/seed/default_music/180/180" alt="Current Track Thumbnail" class="current-track-thumbnail">
+                </div>
+            </div>
+
+            <div style="margin-top: 30px;">
+                <h3>Featured Tracks</h3>
+                <div id="musicGrid" class="music-grid">
+                    <div class="music-card" data-track-id="1" data-src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" data-title="SoundHelix Song 1" data-artist="SoundHelix" data-thumbnail="https://picsum.photos/seed/music1/180/180">
+                        <img src="https://picsum.photos/seed/music1/180/180" class="music-thumbnail">
+                        <div class="music-info">
+                            <h3 class="music-title">SoundHelix Song 1</h3>
+                            <p class="music-artist">SoundHelix</p>
+                        </div>
+                        <span class="play-icon">▶</span>
+                        <button class="add-to-playlist-btn">+</button>
+                    </div>
+                    <div class="music-card" data-track-id="2" data-src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" data-title="SoundHelix Song 2" data-artist="SoundHelix" data-thumbnail="https://picsum.photos/seed/music2/180/180">
+                        <img src="https://picsum.photos/seed/music2/180/180" class="music-thumbnail">
+                        <div class="music-info">
+                            <h3 class="music-title">SoundHelix Song 2</h3>
+                            <p class="music-artist">SoundHelix</p>
+                        </div>
+                        <span class="play-icon">▶</span>
+                        <button class="add-to-playlist-btn">+</button>
+                    </div>
+                    <div class="music-card" data-track-id="3" data-src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" data-title="SoundHelix Song 3" data-artist="SoundHelix" data-thumbnail="https://picsum.photos/seed/music3/180/180">
+                        <img src="https://picsum.photos/seed/music3/180/180" class="music-thumbnail">
+                        <div class="music-info">
+                            <h3 class="music-title">SoundHelix Song 3</h3>
+                            <p class="music-artist">SoundHelix</p>
+                        </div>
+                        <span class="play-icon">▶</span>
+                        <button class="add-to-playlist-btn">+</button>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 40px;">
+                <h3>Recently Played</h3>
+                <div id="recentlyPlayedGrid" class="music-grid">
+                    <p id="noRecentlyPlayedMessage" style="grid-column: 1 / -1; text-align: center; color: #b3b3b3;">No recently played tracks.</p>
+                    <!-- Recently played tracks will be loaded here -->
+                </div>
+            </div>
+
+            <div style="margin-top: 40px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3>Your Playlists</h3>
+                    <button id="createNewPlaylistBtn" class="btn-primary">Create New Playlist</button>
+                </div>
+                <div id="playlistsGrid" class="music-grid">
+                    <p id="noPlaylistsMessage" style="grid-column: 1 / -1; text-align: center; color: #b3b3b3;">No playlists created yet.</p>
+                    <!-- Playlists will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Create Playlist Modal -->
+            <div id="createPlaylistModal" class="modal">
+                <div class="modal-content">
+                    <span class="close-button">&times;</span>
+                    <h3>Create New Playlist</h3>
+                    <div class="form-group">
+                        <input type="text" id="newPlaylistName" placeholder="Playlist Name" required>
+                    </div>
+                    <button id="saveNewPlaylistBtn" class="btn-primary">Create</button>
+                </div>
+            </div>
+
+            <!-- Add to Playlist Modal -->
+            <div id="addToPlaylistModal" class="modal">
+                <div class="modal-content">
+                    <span class="close-button">&times;</span>
+                    <h3>Add to Playlist</h3>
+                    <p id="trackToAddTitle" style="font-weight: bold; margin-bottom: 15px;"></p>
+                    <ul id="playlistSelectionList" class="selection-list">
+                        <!-- Playlists will be loaded here -->
+                    </ul>
+                    <p id="noPlaylistsToAddMessage" style="text-align: center; color: #b3b3b3; display: none;">No playlists available. Create one first!</p>
+                </div>
+            </div>
+
+            <!-- Playlist Tracks Modal -->
+            <div id="playlistTracksModal" class="modal">
+                <div class="modal-content">
+                    <span class="close-button">&times;</span>
+                    <h3 id="playlistTracksModalTitle"></h3>
+                    <ul id="playlistTracksList" class="selection-list">
+                        <!-- Tracks in selected playlist will be loaded here -->
+                        <!-- Example track item with reorder buttons: -->
+                        <!-- <li><img src="..." alt="..." style="..."/><span>Title - Artist</span><button class="move-up-btn">▲</button><button class="move-down-btn">▼</button><button class="remove-track-btn">x</button></li> -->
+                    </ul>
+                    <p id="noTracksInPlaylistMessage" style="text-align: center; color: #b3b3b3; display: none;">This playlist is empty.</p>
+                </div>
+            </div>
+
+        </main>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

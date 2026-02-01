@@ -43,6 +43,8 @@
             <hr>
             <h3 style="padding-left: 24px; font-size: 16px; margin: 10px 0;">More from VideoTube</h3>
             <a href="premium.html" style="text-decoration: none; color: inherit;"><div class="sidebar-item">💎 <span>VideoTube Premium</span></div></a>
+            <a href="videotube_music.html" style="text-decoration: none; color: inherit;"><div class="sidebar-item">🎵 <span>VideoTube Music</span></div></a>
+            <a href="videotube_kids.html" style="text-decoration: none; color: inherit;"><div class="sidebar-item">👶 <span>VideoTube Kids</span></div></a>
             <hr>
             <a href="settings.html" style="text-decoration: none; color: inherit;"><div class="sidebar-item">⚙️ <span>Settings</span></div></a>
             <div class="sidebar-item">❓ <span>Help</span></div>
@@ -54,32 +56,65 @@
             
             <h3 style="margin-top: 30px; font-size: 18px;">Account</h3>
             <ul class="settings-list">
-                <li><span>Google Account</span> <span>&gt;</span></li>
-                <li><span>Switch Account</span> <span>&gt;</span></li>
-                <li><span>Sign out</span></li>
+                <a href="https://myaccount.google.com/" target="_blank" style="text-decoration: none; color: inherit;"><li><span>Google Account</span> <span>&gt;</span></li></a>
+                <a href="login.html" style="text-decoration: none; color: inherit;"><li><span>Switch Account</span> <span>&gt;</span></li></a>
+                <li id="signOutSettings"><span>Sign out</span></li>
             </ul>
 
             <h3 style="margin-top: 30px; font-size: 18px;">VideoTube</h3>
             <ul class="settings-list">
-                <li><span>VideoTube Studio</span> <span>&gt;</span></li>
-                <li><span>Purchases and memberships</span> <span>&gt;</span></li>
-                <li><span>Your data in VideoTube</span> <span>&gt;</span></li>
+                <a href="videotube_studio.html" style="text-decoration: none; color: inherit;"><li><span>VideoTube Studio</span> <span>&gt;</span></li></a>
+                <a href="purchases.html" style="text-decoration: none; color: inherit;"><li><span>Purchases and memberships</span> <span>&gt;</span></li></a>
+                <a href="#" style="text-decoration: none; color: inherit;"><li><span>Your data in VideoTube</span> <span>&gt;</span></li></a>
             </ul>
 
             <h3 style="margin-top: 30px; font-size: 18px;">General</h3>
             <ul class="settings-list">
-                <li><span>Display language</span> <span>English (US) &gt;</span></li>
-                <li><span>Restricted Mode</span> <span>Off &gt;</span></li>
-                <li><span>Location</span> <span>United States &gt;</span></li>
-                <li><span>Keyboard shortcuts</span> <span>&gt;</span></li>
+                <li id="languageSetting"><span>Display language</span> <span id="currentLanguage">English (US)</span> <span class="arrow">&gt;</span></li>
+                <li id="restrictedModeSetting"><span>Restricted Mode</span> 
+                    <label class="switch">
+                        <input type="checkbox" id="restrictedModeToggle">
+                        <span class="slider round"></span>
+                    </label>
+                </li>
+                <li id="locationSetting"><span>Location</span> <span id="currentLocation">United States</span> <span class="arrow">&gt;</span></li>
             </ul>
 
             <h3 style="margin-top: 30px; font-size: 18px;">Help</h3>
             <ul class="settings-list">
-                <li><span>Help</span> <span>&gt;</span></li>
-                <li><span>Send feedback</span> <span>&gt;</span></li>
+                <a href="help.html" style="text-decoration: none; color: inherit;"><li><span>Help</span> <span>&gt;</span></li></a>
+                <a href="feedback.html" style="text-decoration: none; color: inherit;"><li><span>Send feedback</span> <span>&gt;</span></li></a>
             </ul>
         </main>
+    </div>
+
+    <!-- Language Selection Modal -->
+    <div id="languageModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h3>Choose your language</h3>
+            <ul id="languageList" class="selection-list">
+                <li data-lang="en-US">English (US)</li>
+                <li data-lang="es">Español</li>
+                <li data-lang="fr">Français</li>
+                <li data-lang="de">Deutsch</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Location Selection Modal -->
+    <div id="locationModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h3>Choose your location</h3>
+            <ul id="locationList" class="selection-list">
+                <li data-loc="United States">United States</li>
+                <li data-loc="Canada">Canada</li>
+                <li data-loc="United Kingdom">United Kingdom</li>
+                <li data-loc="Germany">Germany</li>
+                <li data-loc="Spain">Spain</li>
+            </ul>
+        </div>
     </div>
     <script src="script.js"></script>
 </body>

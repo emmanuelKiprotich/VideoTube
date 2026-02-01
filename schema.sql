@@ -50,6 +50,33 @@ CREATE TABLE IF NOT EXISTS comments (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS playlists (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS playlist_tracks (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    playlist_id INT NOT NULL,
+    track_data TEXT NOT NULL, -- Stores JSON string of track details (src, title, artist, thumbnail)
+    position INT NOT NULL, -- To maintain order within the playlist
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (playlist_id) REFERENCES playlists(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS recently_played_music (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    track_id VARCHAR(255) NOT NULL, -- Unique ID for the track (e.g., from data-track-id)
+    track_data TEXT NOT NULL, -- Stores JSON string of track details (src, title, artist, thumbnail)
+    played_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, -- Updates on subsequent plays
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE (user_id, track_id) -- Ensures only one entry per user per track, updates timestamp instead
+);
+
 -- Insert some dummy videos
 INSERT INTO videos (title, thumbnail_url, channel_name, channel_avatar_url, view_count, created_at) VALUES 
 ('Building a Website', 'https://picsum.photos/seed/1/320/180', 'Coding Academy', 'https://picsum.photos/seed/avatar1/50', '500K', NOW()),

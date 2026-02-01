@@ -212,6 +212,195 @@ app.delete('/api/watch-later', (req, res) => {
     });
 });
 
+// --- Playlists Routes ---
+
+// Get all playlists for a user
+app.get('/api/playlists', (req, res) => {
+    const userId = req.query.user_id;
+    if (!userId) return res.status(400).json({ error: 'User ID required' });
+
+    const sql = 'SELECT id, name, created_at FROM playlists WHERE user_id = ? ORDER BY created_at DESC';
+    db.query(sql, [userId], (err, results) => {
+        if (err) {
+            console.error('Database error fetching playlists:', err);
+            return res.status(500).json({ error: err.message });
+        }
+        res.json(results);
+    });
+});
+
+// Create a new playlist
+app.post('/api/playlists', (req, res) => {
+    const { user_id, name } = req.body;
+    if (!user_id || !name) return res.status(400).json({ error: 'User ID and playlist name required' });
+
+    const sql = 'INSERT INTO playlists (user_id, name) VALUES (?, ?)';
+    db.query(sql, [user_id, name], (err, result) => {
+        if (err) {
+            console.error('Database error creating playlist:', err);
+            return res.status(500).json({ error: err.message });
+        }
+        res.json({ success: true, playlist: { id: result.insertId, user_id, name, created_at: new Date() } });
+    });
+});
+
+// Delete a playlist
+app.delete('/api/playlists/:id', (req, res) => {
+    const playlistId = req.params.id;
+    const userId = req.query.user_id; // Ensure only owner can delete
+    if (!playlistId || !userId) return res.status(400).json({ error: 'Playlist ID and User ID required' });
+
+    const sql = 'DELETE FROM playlists WHERE id = ? AND user_id = ?';
+    db.query(sql, [playlistId, userId], (err, result) => {
+        if (err) {
+            console.error('Database error deleting playlist:', err);
+            return res.status(500).json({ error: err.message });
+        }
+        if (result.affectedRows === 0) return res.status(404).json({ error: 'Playlist not found or not owned by user' });
+        res.json({ success: true, message: 'Playlist deleted' });
+    });
+});
+
+// Get tracks in a playlist
+app.get('/api/playlists/:id/tracks', (req, res) => {
+    const playlistId = req.params.id;
+    const sql = 'SELECT track_data FROM playlist_tracks WHERE playlist_id = ? ORDER BY position ASC';
+    db.query(sql, [playlistId], (err, results) => {
+        if (err) {
+            console.error('Database error fetching playlist tracks:', err);
+            return res.status(500).json({ error: err.message });
+        }
+        const tracks = results.map(row => JSON.parse(row.track_data));
+        res.json(tracks);
+    });
+});
+
+// Add a track to a playlist
+app.post('/api/playlists/:id/tracks', (req, res) => {
+    const playlistId = req.params.id;
+    const { track_data } = req.body; // track_data should be a JSON string or object
+    if (!playlistId || !track_data) return res.status(400).json({ error: 'Playlist ID and track data required' });
+
+    // Find the next position in the playlist
+    db.query('SELECT MAX(position) as max_pos FROM playlist_tracks WHERE playlist_id = ?', [playlistId], (err, result) => {
+        if (err) return res.status(500).json({ error: err.message });
+        const nextPosition = (result[0].max_pos || 0) + 1;
+
+        const sql = 'INSERT INTO playlist_tracks (playlist_id, track_data, position) VALUES (?, ?, ?)';
+        db.query(sql, [playlistId, JSON.stringify(track_data), nextPosition], (err, insertResult) => {
+            if (err) {
+                console.error('Database error adding track to playlist:', err);
+                return res.status(500).json({ error: err.message });
+            }
+            res.json({ success: true, message: 'Track added to playlist', track_id: insertResult.insertId });
+        });
+    });
+});
+
+// Remove a track from a playlist (by its unique ID in playlist_tracks table)
+app.delete('/api/playlists/:playlistId/tracks/:trackId', (req, res) => {
+    const { playlistId, trackId } = req.params;
+    if (!playlistId || !trackId) return res.status(400).json({ error: 'Playlist ID and Track ID required' });
+
+    const sql = 'DELETE FROM playlist_tracks WHERE playlist_id = ? AND id = ?';
+    db.query(sql, [playlistId, trackId], (err, result) => {
+        if (err) {
+            console.error('Database error removing track from playlist:', err);
+            return res.status(500).json({ error: err.message });
+        }
+        if (result.affectedRows === 0) return res.status(404).json({ error: 'Track not found in playlist' });
+        res.json({ success: true, message: 'Track removed from playlist' });
+    });
+});
+
+// --- Recently Played Music Routes ---
+
+// Record a recently played track
+app.post('/api/recently-played', (req, res) => {
+    const { user_id, track_data } = req.body;
+    if (!user_id || !track_data || !track_data.id) {
+        return res.status(400).json({ error: 'User ID and track data with ID required' });
+    }
+
+    const trackId = track_data.id;
+    const trackDataJson = JSON.stringify(track_data);
+
+    // Check if the track already exists for the user
+    const checkSql = 'SELECT id FROM recently_played_music WHERE user_id = ? AND track_id = ?';
+    db.query(checkSql, [user_id, trackId], (err, results) => {
+        if (err) {
+            console.error('Database error checking recently played track:', err);
+            return res.status(500).json({ error: err.message });
+        }
+
+        if (results.length > 0) {
+            // Track exists, update played_at timestamp
+            const updateSql = 'UPDATE recently_played_music SET played_at = CURRENT_TIMESTAMP, track_data = ? WHERE id = ?';
+            db.query(updateSql, [trackDataJson, results[0].id], (updateErr) => {
+                if (updateErr) {
+                    console.error('Database error updating recently played track:', updateErr);
+                    return res.status(500).json({ error: updateErr.message });
+                }
+                res.json({ success: true, message: 'Recently played track updated' });
+            });
+        } else {
+            // Track does not exist, insert new entry
+            const insertSql = 'INSERT INTO recently_played_music (user_id, track_id, track_data) VALUES (?, ?, ?)';
+            db.query(insertSql, [user_id, trackId, trackDataJson], (insertErr) => {
+                if (insertErr) {
+                    console.error('Database error inserting recently played track:', insertErr);
+                    return res.status(500).json({ error: insertErr.message });
+                }
+                res.json({ success: true, message: 'Recently played track recorded' });
+            });
+        }
+    });
+});
+
+// Get recently played tracks for a user
+app.get('/api/recently-played', (req, res) => {
+    const userId = req.query.user_id;
+    if (!userId) return res.status(400).json({ error: 'User ID required' });
+
+    // Fetch distinct tracks, ordered by played_at, limit to a reasonable number
+    const sql = `
+        SELECT track_data
+        FROM recently_played_music
+        WHERE user_id = ?
+        ORDER BY played_at DESC
+        LIMIT 20
+    `;
+    db.query(sql, [userId], (err, results) => {
+        if (err) {
+            console.error('Database error fetching recently played tracks:', err);
+            return res.status(500).json({ error: err.message });
+        }
+        const tracks = results.map(row => JSON.parse(row.track_data));
+        res.json(tracks);
+    });
+});
+
+// Reorder tracks within a playlist
+app.put('/api/playlists/:id/tracks/reorder', (req, res) => {
+    const playlistId = req.params.id;
+    const { reorderedTracks } = req.body; // Array of { track_db_id: ..., newPosition: ... }
+
+    if (!playlistId || !Array.isArray(reorderedTracks)) {
+        return res.status(400).json({ error: 'Playlist ID and reorderedTracks array required' });
+    }
+
+    const updatePromises = reorderedTracks.map(track => {
+        return db.promise().query('UPDATE playlist_tracks SET position = ? WHERE id = ? AND playlist_id = ?', [track.newPosition, track.track_db_id, playlistId]);
+    });
+
+    Promise.all(updatePromises)
+        .then(() => res.json({ success: true, message: 'Tracks reordered successfully' }))
+        .catch(err => {
+            console.error('Database error reordering playlist tracks:', err);
+            res.status(500).json({ error: err.message });
+        });
+});
+
 // --- Comments Routes ---
 
 app.get('/api/comments/:videoId', (req, res) => {
